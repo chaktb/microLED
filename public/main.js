@@ -1,11 +1,16 @@
 // Solution Synthesis calculator for perovskite precursor solutions.
 //
-// Reaction (1:1 molar ratio):
-//   MAPbI3  <-  PbI2  + MAI   (solvent: DMSO)
-//   MAPbBr3 <-  PbBr2 + MABr  (solvent: DMSO)
+// Reaction (per mole of perovskite, solvent: DMSO):
+//   MAPbI3            <-  PbI2  + MAI
+//   MAPbBr3           <-  PbBr2 + MABr
+//   MAPb(I[1-x]Br[x])3 <- (1-x)(PbI2 + MAI) + x(PbBr2 + MABr)
+//
+// Each precursor carries a stoichiometric coefficient `mol` (moles per mole
+// of perovskite; default 1). For a mixed halide the coefficients follow the
+// (1-x):x mixing of the two pure precursor sets.
 //
 // moles      = concentration [M] * volume [mL] / 1000
-// mass_i [g] = moles * molarMass_i [g/mol]
+// mass_i [g] = moles * mol_i * molarMass_i [g/mol]
 // DMSO [mL]  = target volume   (solid volume assumed negligible)
 
 const MATERIALS = {
@@ -25,17 +30,33 @@ const MATERIALS = {
       { name: "MABr", molarMass: 111.97 },
     ],
   },
+  "MAPb(I0.04Br0.96)3": {
+    label: "MAPb(I0.04Br0.96)3 (mixed halide)",
+    solvent: "DMSO",
+    precursors: [
+      { name: "PbI2", molarMass: 461.01, mol: 0.04 },
+      { name: "PbBr2", molarMass: 367.01, mol: 0.96 },
+      { name: "MAI", molarMass: 158.97, mol: 0.04 },
+      { name: "MABr", molarMass: 111.97, mol: 0.96 },
+    ],
+  },
 };
+
+// Stoichiometric coefficient of a precursor (moles per mole of perovskite).
+function coeff(p) {
+  return p.mol === undefined ? 1 : p.mol;
+}
 
 // Compute the amounts needed for one precursor solution.
 function computeSynthesis(materialKey, concentration, volumeMl) {
   const material = MATERIALS[materialKey];
   if (!material) throw new Error("Unknown material: " + materialKey);
 
-  const moles = (concentration * volumeMl) / 1000; // mol
+  const moles = (concentration * volumeMl) / 1000; // mol of perovskite
   const solids = material.precursors.map((p) => ({
     name: p.name,
-    grams: moles * p.molarMass,
+    mol: coeff(p),
+    grams: moles * coeff(p) * p.molarMass,
   }));
 
   return {
@@ -73,7 +94,7 @@ const T_REF_K = 298.15;       // 25 C reference where eta0 is defined
 
 function soluteMolarMass(materialKey) {
   const material = MATERIALS[materialKey];
-  return material.precursors.reduce((s, p) => s + p.molarMass, 0);
+  return material.precursors.reduce((s, p) => s + coeff(p) * p.molarMass, 0);
 }
 
 // Arrhenius temperature factor relative to T_ref (= 1 at 25 C).
@@ -134,7 +155,9 @@ function calculate() {
   const r = computeSynthesis(materialKey, concentration, volumeMl);
   const v = computeViscosity(materialKey, concentration, eta0, k, tempC, Ea);
 
-  const reaction = MATERIALS[materialKey].precursors.map((p) => p.name).join(" + ");
+  const reaction = MATERIALS[materialKey].precursors
+    .map((p) => (coeff(p) === 1 ? p.name : `${coeff(p)} ${p.name}`))
+    .join(" + ");
   document.getElementById("reaction").innerHTML =
     `${reaction}  →  ${materialKey}   (${r.moles.toExponential(3)} mol)<br>` +
     `용질 질량농도 ${v.massConc.toFixed(4)} g/mL &nbsp;|&nbsp; ` +
@@ -144,7 +167,8 @@ function calculate() {
   const body = document.getElementById("result-body");
   body.innerHTML = "";
   for (const s of r.solids) {
-    addRow(body, s.name, "전구체 (precursor)", `${s.grams.toFixed(4)} g`);
+    const role = s.mol === 1 ? "전구체 (precursor)" : `전구체 ×${s.mol} (precursor)`;
+    addRow(body, s.name, role, `${s.grams.toFixed(4)} g`);
   }
   addRow(body, r.solvent, "용매 (solvent)", `${r.solventMl.toFixed(3)} mL`);
 
@@ -190,7 +214,11 @@ const VISC_CHART_COLORS = {
   text: "#9aa3c0",
   marker: "#e8ebf5",
 };
-const MATERIAL_COLORS = { MAPbI3: "#8e44ad", MAPbBr3: "#27ae60" };
+const MATERIAL_COLORS = {
+  MAPbI3: "#8e44ad",
+  MAPbBr3: "#27ae60",
+  "MAPb(I0.04Br0.96)3": "#e0a13a",
+};
 const TEMP_MIN = 0;   // C
 const TEMP_MAX = 80;  // C
 
