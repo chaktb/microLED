@@ -16,6 +16,7 @@
 const MATERIALS = {
   MAPbI3: {
     label: "MAPbI3 (CH3NH3PbI3)",
+    short: "MAPbI3",
     solvent: "DMSO",
     precursors: [
       { name: "PbI2", molarMass: 461.01 },
@@ -24,27 +25,61 @@ const MATERIALS = {
   },
   MAPbBr3: {
     label: "MAPbBr3 (CH3NH3PbBr3)",
+    short: "MAPbBr3",
     solvent: "DMSO",
     precursors: [
       { name: "PbBr2", molarMass: 367.01 },
       { name: "MABr", molarMass: 111.97 },
     ],
   },
-  "MAPb(I0.04Br0.96)3": {
-    label: "MAPb(I0.04Br0.96)3 (mixed halide)",
+  // Mixed halide MAPb(I[1-x]Br[x])3 — composition set dynamically from x.
+  MIXED: {
+    label: "MAPb(I,Br)3 (mixed halide)",
+    short: "MAPb(I,Br)3",
     solvent: "DMSO",
-    precursors: [
-      { name: "PbI2", molarMass: 461.01, mol: 0.04 },
-      { name: "PbBr2", molarMass: 367.01, mol: 0.96 },
-      { name: "MAI", molarMass: 158.97, mol: 0.04 },
-      { name: "MABr", molarMass: 111.97, mol: 0.96 },
-    ],
+    x: 0.96,
+    precursors: [],
   },
 };
+
+// Molar masses of the four precursors used by the mixed halide.
+const MIXED_PRECURSORS = {
+  PbI2: 461.01,
+  PbBr2: 367.01,
+  MAI: 158.97,
+  MABr: 111.97,
+};
+
+// Set the mixed-halide composition (Br fraction x in [0,1]) and rebuild its
+// precursors as (1-x)(PbI2 + MAI) + x(PbBr2 + MABr).
+function setMixedComposition(x) {
+  const xb = Math.max(0, Math.min(1, Number.isFinite(x) ? x : 0.96));
+  const m = MATERIALS.MIXED;
+  m.x = xb;
+  m.short = `MAPb(I${(1 - xb).toFixed(2)}Br${xb.toFixed(2)})3`;
+  m.label = `${m.short} (mixed halide)`;
+  m.precursors = [
+    { name: "PbI2", molarMass: MIXED_PRECURSORS.PbI2, mol: 1 - xb },
+    { name: "PbBr2", molarMass: MIXED_PRECURSORS.PbBr2, mol: xb },
+    { name: "MAI", molarMass: MIXED_PRECURSORS.MAI, mol: 1 - xb },
+    { name: "MABr", molarMass: MIXED_PRECURSORS.MABr, mol: xb },
+  ];
+}
+setMixedComposition(0.96); // default composition
 
 // Stoichiometric coefficient of a precursor (moles per mole of perovskite).
 function coeff(p) {
   return p.mol === undefined ? 1 : p.mol;
+}
+
+// Format a coefficient without floating-point noise (e.g. 0.04, 0.96, 1).
+function fmtCoeff(m) {
+  return parseFloat(m.toFixed(4)).toString();
+}
+
+// Friendly display name (composition) for a material key.
+function displayName(key) {
+  return (MATERIALS[key] && MATERIALS[key].short) || key;
 }
 
 // Compute the amounts needed for one precursor solution.
@@ -137,6 +172,14 @@ function calculate() {
   const concentration = parseFloat(document.getElementById("concentration").value);
   const volumeMl = parseFloat(document.getElementById("volume").value);
 
+  // Mixed-halide composition: update from the x input before any computation.
+  const xEl = document.getElementById("xbr");
+  if (xEl) {
+    setMixedComposition(parseFloat(xEl.value));
+    const opt = document.querySelector('#material option[value="MIXED"]');
+    if (opt) opt.textContent = MATERIALS.MIXED.label;
+  }
+
   if (!(concentration >= 0) || !(volumeMl >= 0)) {
     alert("농도와 부피는 0 이상의 숫자여야 합니다.");
     return;
@@ -156,10 +199,11 @@ function calculate() {
   const v = computeViscosity(materialKey, concentration, eta0, k, tempC, Ea);
 
   const reaction = MATERIALS[materialKey].precursors
-    .map((p) => (coeff(p) === 1 ? p.name : `${coeff(p)} ${p.name}`))
+    .filter((p) => coeff(p) > 0)
+    .map((p) => (coeff(p) === 1 ? p.name : `${fmtCoeff(coeff(p))} ${p.name}`))
     .join(" + ");
   document.getElementById("reaction").innerHTML =
-    `${reaction}  →  ${materialKey}   (${r.moles.toExponential(3)} mol)<br>` +
+    `${reaction}  →  ${displayName(materialKey)}   (${r.moles.toExponential(3)} mol)<br>` +
     `용질 질량농도 ${v.massConc.toFixed(4)} g/mL &nbsp;|&nbsp; ` +
     `η(25°C) = ${v.etaRef.toFixed(2)} cP &nbsp;→&nbsp; ` +
     `η(${tempC}°C) ≈ <strong>${v.viscosity.toFixed(2)} cP</strong>`;
@@ -167,7 +211,8 @@ function calculate() {
   const body = document.getElementById("result-body");
   body.innerHTML = "";
   for (const s of r.solids) {
-    const role = s.mol === 1 ? "전구체 (precursor)" : `전구체 ×${s.mol} (precursor)`;
+    if (s.mol <= 0) continue; // skip precursors absent at this composition
+    const role = s.mol === 1 ? "전구체 (precursor)" : `전구체 ×${fmtCoeff(s.mol)} (precursor)`;
     addRow(body, s.name, role, `${s.grams.toFixed(4)} g`);
   }
   addRow(body, r.solvent, "용매 (solvent)", `${r.solventMl.toFixed(3)} mL`);
@@ -182,7 +227,7 @@ function calculate() {
       const vi = computeViscosity(key, concentration, eta0, k, tempC, Ea);
       addRow3(
         viscBody,
-        key,
+        displayName(key),
         soluteMolarMass(key).toFixed(2),
         vi.massConc.toFixed(4),
         vi.etaRef.toFixed(2),
@@ -217,7 +262,7 @@ const VISC_CHART_COLORS = {
 const MATERIAL_COLORS = {
   MAPbI3: "#8e44ad",
   MAPbBr3: "#27ae60",
-  "MAPb(I0.04Br0.96)3": "#e0a13a",
+  MIXED: "#e0a13a",
 };
 const TEMP_MIN = 0;   // C
 const TEMP_MAX = 80;  // C
@@ -357,7 +402,7 @@ function drawViscChart({ concentration, eta0, k, Ea, selectedTemp }) {
     ctx.fillStyle = VISC_CHART_COLORS.text;
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    ctx.fillText(key, padL + plotW - 88, ly);
+    ctx.fillText(displayName(key), padL + plotW - 88, ly);
     ly += 16;
   }
 }
@@ -374,5 +419,8 @@ function addRow(body, component, role, amount) {
 
 // Export for Node-based reuse/testing if available.
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { MATERIALS, computeSynthesis, computeViscosity, soluteMolarMass };
+  module.exports = {
+    MATERIALS, computeSynthesis, computeViscosity, soluteMolarMass,
+    setMixedComposition, displayName,
+  };
 }
