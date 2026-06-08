@@ -43,6 +43,17 @@
         </label>
       </div>
 
+      <div class="controls">
+        <label>
+          용매 점도 η₀ (DMSO, cP)
+          <input id="eta0" type="number" value="1.99" step="0.01" min="0" />
+        </label>
+        <label>
+          점도 계수 k (mL/g)
+          <input id="visck" type="number" value="1.0" step="0.05" min="0" />
+        </label>
+      </div>
+
       <button id="calc" onclick="calculate()">계산하기 (Calculate)</button>
 
       <div id="reaction" class="reaction"></div>
@@ -58,9 +69,28 @@
         <tbody id="result-body"></tbody>
       </table>
 
+      <table id="visc-result" class="result" hidden>
+        <thead>
+          <tr>
+            <th>혼합물 (Mixture)</th>
+            <th>ΣM (g/mol)</th>
+            <th>용질 질량농도 (g/mL)</th>
+            <th>추정 점도 η (cP)</th>
+          </tr>
+        </thead>
+        <tbody id="visc-body"></tbody>
+      </table>
+
       <p class="note">
         ※ DMSO 부피는 목표 용액 부피로 가정합니다(전구체 고체 부피는 무시).
         실제 실험에서는 고체를 DMSO에 녹인 뒤 목표 부피까지 채우십시오.
+      </p>
+      <p class="note">
+        ※ 점도는 농축 용액의 경험식 η = η₀·exp(k·w)로 추정합니다. w는 용질 질량농도
+        (= C·ΣM/1000, g/mL)이며 배치 부피와 무관합니다. η₀는 25°C 순수 DMSO 점도(~1.99 cP),
+        k는 용액계마다 다른 보정 계수입니다. 같은 농도라도 분자량이 큰 MAPbI₃가 MAPbBr₃보다
+        점도가 높게 나옵니다. 실제 점도는 동일 조건에서 측정값으로 k를 보정해 사용하고,
+        얻은 점도는 <a href="/spincoating.html">Spin Coating</a> 계산기에 입력할 수 있습니다.
       </p>
     </section>
   </main>
