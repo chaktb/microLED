@@ -1,37 +1,54 @@
 // Multilayer perovskite photoluminescence (PL) spectrum estimator.
 //
-// Each layer emits a Gaussian PL band centred at a material-dependent peak
-// wavelength (set by the band gap), with an amplitude proportional to the
-// amount of emitter (film thickness x precursor concentration). The total
-// spectrum is the sum over layers, normalised so its maximum is 1 a.u.
+// Port of the reference Python model. Each material emits a Gaussian band
+// centred at a wavelength set by its optical band gap (lambda = hc/Eg). Two
+// spectra are produced:
 //
-//   I(lambda) = sum_i A_i * exp[ -(lambda - peak_i)^2 / (2 sigma_i^2) ]
-//   A_i  proportional to  thickness_i * concentration_i
-//   sigma_i = FWHM_i / (2*sqrt(2*ln2))
+//   (1) Idealized : sum of Gaussians weighted by  volume * PLQY
+//   (2) Realistic : same, but each band is scaled by an escape fraction
+//                   (green MAPbBr3 photons are reabsorbed -- "funnelled" --
+//                   by the lower-gap MAPbI3 layers) PLUS a broad mixed-halide
+//                   shoulder from interdiffusion at the interfaces.
 //
-// Reabsorption, interlayer energy transfer, optical interference and the
-// excitation absorption profile are all neglected -- this is a qualitative
-// tool meant to show *where* the PL peaks sit and their relative size.
+// Each spectrum is normalised to its own maximum (a.u.).
+//
+// Reference baseline: a 500 nm, 0.9 M layer contributes unit volume. Layer
+// volume scales linearly with thickness/500 nm and concentration/0.9 M, so
+// the default MAPbI3/MAPbBr3/MAPbI3 (500/500/500 nm, 0.9 M) stack reproduces
+// the Python volumes (MAPbI3 = 2.0, MAPbBr3 = 1.0).
 
-// Representative room-temperature MAPbX3 emission parameters.
-//   peak : PL peak wavelength [nm]   (from the optical band gap)
-//   fwhm : full width at half maximum [nm]
-const MATERIALS = {
-  MAPbI3:  { label: "MAPbI₃",  peak: 770, fwhm: 45, color: "#ff5d6c" },
-  MAPbBr3: { label: "MAPbBr₃", peak: 540, fwhm: 25, color: "#46d17a" },
-  MAPbCl3: { label: "MAPbCl₃", peak: 405, fwhm: 15, color: "#6c8cff" },
-};
+// hc in [eV*nm]: H_EV(4.135667696e-15 eV*s) * C(2.99792458e8 m/s) * 1e9.
+const HC_EV_NM = 1239.841984;
+const REF_THICKNESS_NM = 500;
+const REF_CONC_M = 0.9;
+const FWHM_TO_SIGMA = 1 / 2.35482;
 
-const FWHM_TO_SIGMA = 1 / (2 * Math.sqrt(2 * Math.LN2)); // ~0.4247
-
-// Gaussian PL contribution of one layer at wavelength lambda [nm].
-function layerEmission(lambda, peak, fwhm, amp) {
-  const sigma = fwhm * FWHM_TO_SIGMA;
-  const z = (lambda - peak) / sigma;
-  return amp * Math.exp(-0.5 * z * z);
+// Convert photon energy [eV] to wavelength [nm].
+function eVtoNm(Eg) {
+  return HC_EV_NM / Eg;
 }
 
-// Build the layer list from the form (material key, thickness, concentration).
+// Normalised-shape Gaussian (peak = 1).
+function gaussian(x, x0, sigma) {
+  const z = (x - x0) / sigma;
+  return Math.exp(-0.5 * z * z);
+}
+
+// Representative room-temperature MAPbX3 emission parameters.
+//   Eg     : optical band gap / emission energy [eV]
+//   fwhm   : emission FWHM [nm]
+//   plqy   : relative radiative efficiency (0..1)
+//   escape : realistic-case escape fraction (1 - reabsorbed)
+const MATERIALS = {
+  MAPbI3:  { label: "MAPbI₃",  Eg: 1.60, fwhm: 45, plqy: 1.0, escape: 1.0,  color: "#8e44ad" },
+  MAPbBr3: { label: "MAPbBr₃", Eg: 2.30, fwhm: 25, plqy: 0.7, escape: 0.25, color: "#27ae60" },
+  MAPbCl3: { label: "MAPbCl₃", Eg: 3.00, fwhm: 15, plqy: 0.5, escape: 0.5,  color: "#2980b9" },
+};
+
+const LAMBDA_MIN = 450; // nm
+const LAMBDA_MAX = 900; // nm
+
+// Read the layer stack from the form (material key, thickness, concentration).
 function readLayers() {
   const layers = [];
   for (let i = 1; i <= 3; i++) {
@@ -40,26 +57,53 @@ function readLayers() {
     const c = parseFloat(document.getElementById("c" + i).value);
     const m = MATERIALS[key];
     if (!m || !(d > 0) || !(c > 0)) continue;
-    layers.push({ key, ...m, thickness: d, conc: c, amp: d * c });
+    const volume = (d / REF_THICKNESS_NM) * (c / REF_CONC_M);
+    layers.push({ key, ...m, thickness: d, conc: c, volume });
   }
   return layers;
 }
 
-// Total (un-normalised) PL intensity at wavelength lambda for a layer list.
-function totalEmission(lambda, layers) {
-  let sum = 0;
-  for (const L of layers) sum += layerEmission(lambda, L.peak, L.fwhm, L.amp);
-  return sum;
+// Read the realistic-case mixed-halide shoulder parameters.
+function readMix() {
+  return {
+    peak: parseFloat(document.getElementById("mixPeak").value),
+    fwhm: parseFloat(document.getElementById("mixFwhm").value),
+    amp: parseFloat(document.getElementById("mixAmp").value),
+  };
 }
 
-const LAMBDA_MIN = 380; // nm
-const LAMBDA_MAX = 860; // nm
+// Collapse same-material layers into one band; sum their volumes.
+function bandsFromLayers(layers) {
+  const byMat = new Map();
+  for (const L of layers) {
+    const cur = byMat.get(L.key);
+    if (cur) cur.volume += L.volume;
+    else byMat.set(L.key, { ...L });
+  }
+  return [...byMat.values()].sort((a, b) => a.Eg - b.Eg); // red -> blue
+}
 
-// Peak total intensity across the plotted range, for a.u. normalisation.
-function peakIntensity(layers) {
+// Un-normalised PL intensity at wavelength lambda.
+//   realistic=false : ideal (volume * plqy)
+//   realistic=true  : * escape fraction, plus the mixed-halide shoulder
+function rawSpectrum(lambda, bands, mix, realistic) {
+  let total = 0;
+  for (const b of bands) {
+    let amp = b.volume * b.plqy;
+    if (realistic) amp *= b.escape;
+    total += amp * gaussian(lambda, eVtoNm(b.Eg), b.fwhm * FWHM_TO_SIGMA);
+  }
+  if (realistic && mix && mix.amp > 0) {
+    total += mix.amp * gaussian(lambda, mix.peak, mix.fwhm * FWHM_TO_SIGMA);
+  }
+  return total;
+}
+
+// Peak of the raw spectrum across the plotted range (for a.u. normalisation).
+function peakOf(bands, mix, realistic) {
   let max = 0;
   for (let lambda = LAMBDA_MIN; lambda <= LAMBDA_MAX; lambda += 0.5) {
-    const v = totalEmission(lambda, layers);
+    const v = rawSpectrum(lambda, bands, mix, realistic);
     if (v > max) max = v;
   }
   return max || 1;
@@ -71,34 +115,40 @@ function calculate() {
     alert("최소 한 층 이상에서 두께와 농도가 0보다 커야 합니다.");
     return;
   }
+  const mix = readMix();
+  const bands = bandsFromLayers(layers);
 
-  const norm = peakIntensity(layers);
-
-  // Combine layers of the same material into one emission band for the summary.
-  const byMat = new Map();
-  for (const L of layers) {
-    const cur = byMat.get(L.key);
-    if (cur) cur.amp += L.amp;
-    else byMat.set(L.key, { ...L });
-  }
-  const bands = [...byMat.values()].sort((a, b) => a.peak - b.peak);
+  const normIdeal = peakOf(bands, mix, false);
+  const normReal = peakOf(bands, mix, true);
 
   document.getElementById("summary").innerHTML =
     bands
-      .map(
-        (b) =>
-          `${b.label}: ${b.peak} nm @ ${(b.amp / norm).toFixed(3)} a.u.`
-      )
-      .join(" &nbsp;|&nbsp; ");
+      .map((b) => `${b.label}: ${eVtoNm(b.Eg).toFixed(1)} nm (E<sub>g</sub> ${b.Eg.toFixed(2)} eV)`)
+      .join(" &nbsp;|&nbsp; ") +
+    (mix.amp > 0
+      ? ` &nbsp;|&nbsp; mixed-halide shoulder: ${mix.peak.toFixed(0)} nm`
+      : "");
 
+  // Per-band table: ideal vs realistic relative weight (peak-normalised).
   const body = document.getElementById("result-body");
   body.innerHTML = "";
   for (const b of bands) {
-    addRow(body, b.label, b.peak, b.fwhm, (b.amp / norm).toFixed(3));
+    const wIdeal = (b.volume * b.plqy) / normIdeal;
+    const wReal = (b.volume * b.plqy * b.escape) / normReal;
+    addRow(
+      body,
+      b.label,
+      eVtoNm(b.Eg).toFixed(1),
+      b.fwhm,
+      b.plqy.toFixed(2),
+      b.escape.toFixed(2),
+      wIdeal.toFixed(3),
+      wReal.toFixed(3)
+    );
   }
   document.getElementById("result").hidden = false;
 
-  drawChart({ layers, norm });
+  drawChart({ bands, mix, normIdeal, normReal });
 }
 
 function addRow(body, ...cells) {
@@ -117,10 +167,12 @@ const CHART_COLORS = {
   grid: "#2a3050",
   axis: "#9aa3c0",
   text: "#9aa3c0",
-  total: "#e8ebf5",
+  ideal: "#9aa3c0",
+  real: "#e74c5e",
+  fill: "rgba(231, 76, 94, 0.10)",
 };
 
-function drawChart({ layers, norm }) {
+function drawChart({ bands, mix, normIdeal, normReal }) {
   const canvas = document.getElementById("chart");
   if (!canvas || !canvas.getContext) return;
 
@@ -137,8 +189,7 @@ function drawChart({ layers, norm }) {
   const padL = 56, padR = 18, padT = 18, padB = 46;
   const plotW = cssW - padL - padR;
   const plotH = cssH - padT - padB;
-
-  const yMax = 1.05; // a.u. (normalised so total peaks at 1.0)
+  const yMax = 1.05;
 
   const mapX = (lambda) =>
     padL + ((lambda - LAMBDA_MIN) / (LAMBDA_MAX - LAMBDA_MIN)) * plotW;
@@ -165,7 +216,7 @@ function drawChart({ layers, norm }) {
   // X ticks (wavelength, nm).
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
-  for (let lambda = 400; lambda <= LAMBDA_MAX; lambda += 100) {
+  for (let lambda = 500; lambda <= LAMBDA_MAX; lambda += 100) {
     const x = mapX(lambda);
     ctx.beginPath();
     ctx.moveTo(x, padT);
@@ -186,53 +237,83 @@ function drawChart({ layers, norm }) {
   ctx.fillText("PL intensity (a.u.)", 0, 0);
   ctx.restore();
 
-  const N = 240;
-  const sample = (fn) => {
+  const N = 300;
+  const sample = (realistic, norm) => {
     const pts = [];
     for (let i = 0; i <= N; i++) {
       const lambda = LAMBDA_MIN + ((LAMBDA_MAX - LAMBDA_MIN) * i) / N;
-      pts.push({ x: mapX(lambda), y: mapY(fn(lambda) / norm) });
+      pts.push({ x: mapX(lambda), y: mapY(rawSpectrum(lambda, bands, mix, realistic) / norm) });
     }
     return pts;
   };
-  const stroke = (pts, color, width, dash) => {
-    ctx.setLineDash(dash || []);
-    ctx.strokeStyle = color;
-    ctx.lineWidth = width;
+
+  const realPts = sample(true, normReal);
+  const idealPts = sample(false, normIdeal);
+
+  // Fill under the realistic curve.
+  ctx.fillStyle = CHART_COLORS.fill;
+  ctx.beginPath();
+  ctx.moveTo(realPts[0].x, mapY(0));
+  realPts.forEach((p) => ctx.lineTo(p.x, p.y));
+  ctx.lineTo(realPts[realPts.length - 1].x, mapY(0));
+  ctx.closePath();
+  ctx.fill();
+
+  // Band peak guides + labels.
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  for (const b of bands) {
+    const x = mapX(eVtoNm(b.Eg));
+    ctx.setLineDash([2, 3]);
+    ctx.strokeStyle = b.color;
+    ctx.globalAlpha = 0.8;
     ctx.beginPath();
-    pts.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));
+    ctx.moveTo(x, padT);
+    ctx.lineTo(x, padT + plotH);
     ctx.stroke();
     ctx.setLineDash([]);
-  };
-
-  // Per-material contributions (combine same-material layers).
-  const byMat = new Map();
-  for (const L of layers) {
-    const cur = byMat.get(L.key);
-    if (cur) cur.amp += L.amp;
-    else byMat.set(L.key, { ...L });
-  }
-  for (const b of byMat.values()) {
-    stroke(
-      sample((lambda) => layerEmission(lambda, b.peak, b.fwhm, b.amp)),
-      b.color,
-      1.5,
-      [5, 4]
-    );
-  }
-
-  // Total spectrum on top.
-  stroke(sample((lambda) => totalEmission(lambda, layers)), CHART_COLORS.total, 2.5);
-
-  // Peak labels.
-  ctx.fillStyle = CHART_COLORS.text;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "bottom";
-  for (const b of byMat.values()) {
-    const x = mapX(b.peak);
-    const y = mapY(totalEmission(b.peak, layers) / norm);
+    ctx.globalAlpha = 1;
     ctx.fillStyle = b.color;
-    ctx.fillText(`${b.label} ${b.peak}nm`, x, y - 6);
+    ctx.fillText(`${b.label} ~${eVtoNm(b.Eg).toFixed(0)}nm`, x, padT + 2);
+  }
+
+  // Idealized curve (dashed, grey).
+  ctx.setLineDash([6, 4]);
+  ctx.strokeStyle = CHART_COLORS.ideal;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  idealPts.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Realistic curve (solid, red).
+  ctx.strokeStyle = CHART_COLORS.real;
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  realPts.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));
+  ctx.stroke();
+
+  // Legend (top-right).
+  const lx = padL + plotW - 210;
+  let ly = padT + 6;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  const legend = [
+    { c: CHART_COLORS.ideal, dash: true, t: "Idealized (no reabsorption)" },
+    { c: CHART_COLORS.real, dash: false, t: "Realistic (funneling + interdiff.)" },
+  ];
+  for (const item of legend) {
+    ctx.strokeStyle = item.c;
+    ctx.lineWidth = item.dash ? 2 : 2.5;
+    ctx.setLineDash(item.dash ? [6, 4] : []);
+    ctx.beginPath();
+    ctx.moveTo(lx, ly);
+    ctx.lineTo(lx + 26, ly);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = CHART_COLORS.text;
+    ctx.fillText(item.t, lx + 32, ly);
+    ly += 16;
   }
 }
 
@@ -267,5 +348,5 @@ if (typeof document !== "undefined") {
 
 // Export for Node-based reuse/testing if available.
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { MATERIALS, layerEmission, totalEmission };
+  module.exports = { MATERIALS, eVtoNm, gaussian, rawSpectrum, bandsFromLayers };
 }
