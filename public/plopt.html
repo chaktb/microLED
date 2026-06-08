@@ -48,12 +48,39 @@
           Stokes shift (eV)
           <input id="stokes" type="number" value="0.05" step="0.01" min="0" />
         </label>
+        <label>
+          MAPbI₃ 캡 농도 (M)
+          <input id="capconc" type="number" value="0.9" step="0.05" min="0" />
+        </label>
       </div>
 
       <button id="calc" onclick="calculate()">최적화 (Optimize)</button>
 
       <div id="summary" class="reaction"></div>
 
+      <div id="stack">
+        <h3 style="margin-top:1.25rem">층별 구성 (Layer breakdown · MAPbI₃ / Emitter / MAPbI₃)</h3>
+        <div class="table-wrap">
+          <table class="result">
+            <thead>
+              <tr>
+                <th>층 (Layer)</th>
+                <th>물질 (Material)</th>
+                <th>농도 (M)</th>
+                <th>두께 (nm)</th>
+                <th>비고 (Note)</th>
+              </tr>
+            </thead>
+            <tbody id="stack-body"></tbody>
+          </table>
+        </div>
+
+        <div class="chart-wrap">
+          <canvas id="chart-stack" class="chart" width="640" height="340"></canvas>
+        </div>
+      </div>
+
+      <h3 style="margin-top:1.5rem">최적화 상세 (Optimization detail)</h3>
       <div class="table-wrap">
         <table class="result">
           <thead>

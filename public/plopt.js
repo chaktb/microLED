@@ -173,6 +173,7 @@ function calculate() {
   };
   const opt = { ...OPTICS };
   const target = numOr("target", 540);
+  const capConc = numOr("capconc", 0.9);
 
   const design = optimize(target, em, opt);
 
@@ -180,6 +181,7 @@ function calculate() {
   const detail = document.getElementById("design-body");
   const chartWrap = document.getElementById("charts");
   const scanWrap = document.getElementById("scan-result");
+  const stackWrap = document.getElementById("stack");
 
   if (!design) {
     const range = `${emissionNm(1.0, em).toFixed(0)}–${emissionNm(0.0, em).toFixed(0)} nm`;
@@ -187,6 +189,7 @@ function calculate() {
       `타겟 ${target.toFixed(0)} nm 은 MAPb(I,Br)₃ 발광 범위(${range}) 밖입니다.`;
     if (detail) detail.parentElement.parentElement.hidden = true;
     if (chartWrap) chartWrap.hidden = true;
+    if (stackWrap) stackWrap.hidden = true;
     drawScan(em, opt);
     return;
   }
@@ -195,6 +198,12 @@ function calculate() {
     `${compositionLabel(design.xBr)} &nbsp;|&nbsp; ` +
     `Br 분율 x = ${design.xBr.toFixed(3)} &nbsp;|&nbsp; ` +
     `상대 피크 신호 = <strong>${design.signal.toFixed(3)}</strong>`;
+
+  // Per-layer breakdown (M and thickness) for MAPbI3 / Emitter / MAPbI3.
+  const layers = buildLayers(design, capConc, opt);
+  if (stackWrap) stackWrap.hidden = false;
+  renderStackTable(layers);
+  drawStackDiagram(layers);
 
   // Design detail table.
   detail.innerHTML = "";
@@ -232,6 +241,119 @@ function addRow(body, ...cells) {
     tr.appendChild(td);
   }
   body.appendChild(tr);
+}
+
+// Short composition name (no trailing descriptor).
+function compositionShort(x) {
+  if (x < 0.02) return "MAPbI₃";
+  if (x > 0.98) return "MAPbBr₃";
+  return `MAPb(I${(1 - x).toFixed(2)}Br${x.toFixed(2)})₃`;
+}
+
+// Build the 3-layer stack (top -> bottom) with per-layer M and thickness.
+function buildLayers(design, capConc, opt) {
+  const emitColor = lerpHex("#8e44ad", "#27ae60", design.xBr); // MAPbI3 -> MAPbBr3
+  return [
+    {
+      role: "Top cap",
+      material: "MAPbI₃",
+      color: "#8e44ad",
+      concM: capConc,
+      thicknessNm: design.capNm,
+      note: design.capAbsorbsTarget ? "thin — 타겟 재흡수 최소화" : "free — 타겟에 투명",
+    },
+    {
+      role: "Emitter (middle)",
+      material: compositionShort(design.xBr),
+      color: emitColor,
+      concM: design.concM,
+      thicknessNm: design.emitterNm,
+      note: "두께·농도 최적화",
+    },
+    {
+      role: "Bottom",
+      material: "MAPbI₃",
+      color: "#8e44ad",
+      concM: capConc,
+      thicknessNm: opt.tCapMax,
+      note: "free — 전면 발광에 무관(구조층)",
+    },
+  ];
+}
+
+function renderStackTable(layers) {
+  const body = document.getElementById("stack-body");
+  if (!body) return;
+  body.innerHTML = "";
+  for (const L of layers) {
+    addRow(body, L.role, L.material, L.concM.toFixed(2), L.thicknessNm.toFixed(0), L.note);
+  }
+}
+
+// Linear interpolation between two #rrggbb colors.
+function lerpHex(a, b, t) {
+  const pa = [parseInt(a.slice(1, 3), 16), parseInt(a.slice(3, 5), 16), parseInt(a.slice(5, 7), 16)];
+  const pb = [parseInt(b.slice(1, 3), 16), parseInt(b.slice(3, 5), 16), parseInt(b.slice(5, 7), 16)];
+  const c = pa.map((v, i) => Math.round(v + (pb[i] - v) * Math.max(0, Math.min(1, t))));
+  return `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
+}
+
+// Cross-section diagram: full-width bands stacked top->bottom, height ~ thickness.
+function drawStackDiagram(layers) {
+  const canvas = document.getElementById("chart-stack");
+  if (!canvas || !canvas.getContext) return;
+  const ctx = canvas.getContext("2d");
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = canvas.clientWidth || 640;
+  const cssH = 340;
+  canvas.width = Math.round(cssW * dpr);
+  canvas.height = Math.round(cssH * dpr);
+  canvas.style.height = cssH + "px";
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, cssW, cssH);
+
+  const padL = 16, padR = 16, padT = 34, padB = 16;
+  const bandW = cssW - padL - padR;
+  const availH = cssH - padT - padB;
+
+  // Heights: proportional to thickness, but each band gets a minimum so thin
+  // caps stay readable. Remaining height is shared by thickness.
+  const minH = 30;
+  const total = layers.reduce((s, L) => s + L.thicknessNm, 0) || 1;
+  const extra = Math.max(0, availH - minH * layers.length);
+  const heights = layers.map((L) => minH + (extra * L.thicknessNm) / total);
+
+  // Title.
+  ctx.font = "13px system-ui, -apple-system, sans-serif";
+  ctx.fillStyle = "#9aa3c0";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillText("Layer stack (top → bottom) — 높이 ∝ 두께", padL, 22);
+
+  let y = padT;
+  for (let i = 0; i < layers.length; i++) {
+    const L = layers[i];
+    const h = heights[i];
+
+    ctx.fillStyle = L.color;
+    ctx.globalAlpha = 0.85;
+    ctx.fillRect(padL, y, bandW, h);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = "#0f1220";
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(padL, y, bandW, h);
+
+    // Left label: role · material. Right label: thickness · concentration.
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "13px system-ui, -apple-system, sans-serif";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText(`${L.role} · ${L.material}`, padL + 12, y + h / 2);
+    ctx.textAlign = "right";
+    ctx.fillText(`${L.thicknessNm.toFixed(0)} nm · ${L.concM.toFixed(2)} M`, padL + bandW - 12, y + h / 2);
+
+    y += h;
+  }
 }
 
 // Quick scan over several common targets.
@@ -467,5 +589,6 @@ if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     EMITTER, OPTICS, emitterEg, emissionNm, fwhmNm,
     xForWavelength, capAbsorption, detected, optimalEmitterThickness, optimize,
+    buildLayers, compositionShort,
   };
 }
