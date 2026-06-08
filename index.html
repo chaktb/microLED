@@ -3,65 +3,35 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MicroLED — Solution Synthesis</title>
+  <title>MicroLED — Perovskite Toolkit</title>
   <link href='/style.css' rel='stylesheet'>
 </head>
 <body>
   <header>
-    <h1>Solution Synthesis</h1>
-    <p class="subtitle">Perovskite precursor solution calculator</p>
-    <nav class="nav">
-      <a href="/index.html" class="active">Solution Synthesis</a>
-      <a href="/spincoating.html">Spin Coating</a>
-    </nav>
+    <h1>Perovskite Toolkit</h1>
+    <p class="subtitle">페로브스카이트 박막 공정 계산 도구 모음</p>
   </header>
 
   <main>
-    <section class="card">
-      <h2>Calculator</h2>
-      <p class="desc">
-        목표 농도와 부피를 입력하면, 페로브스카이트 전구체 용액을 만들기 위해
-        섞어야 할 전구체 질량과 용매(DMSO) 부피를 계산합니다.
-        합성은 1:1 몰비 반응을 가정합니다.
-      </p>
+    <div class="grid">
+      <a class="card link-card" href="/synthesis.html">
+        <h2>Solution Synthesis</h2>
+        <p class="desc">
+          목표 농도와 부피로부터 페로브스카이트 전구체 용액에 필요한
+          전구체 질량과 용매(DMSO) 부피를 계산합니다.
+        </p>
+        <span class="card-cta">계산하러 가기 →</span>
+      </a>
 
-      <div class="controls">
-        <label>
-          물질 (Material)
-          <select id="material"></select>
-        </label>
-        <label>
-          농도 (Concentration, M)
-          <input id="concentration" type="number" value="0.9" step="0.01" min="0" />
-        </label>
-        <label>
-          부피 (Volume, mL)
-          <input id="volume" type="number" value="1" step="0.1" min="0" />
-        </label>
-      </div>
-
-      <button id="calc" onclick="calculate()">계산하기 (Calculate)</button>
-
-      <div id="reaction" class="reaction"></div>
-
-      <table id="result" class="result" hidden>
-        <thead>
-          <tr>
-            <th>성분 (Component)</th>
-            <th>역할 (Role)</th>
-            <th>양 (Amount)</th>
-          </tr>
-        </thead>
-        <tbody id="result-body"></tbody>
-      </table>
-
-      <p class="note">
-        ※ DMSO 부피는 목표 용액 부피로 가정합니다(전구체 고체 부피는 무시).
-        실제 실험에서는 고체를 DMSO에 녹인 뒤 목표 부피까지 채우십시오.
-      </p>
-    </section>
+      <a class="card link-card" href="/spincoating.html">
+        <h2>Spin Coating</h2>
+        <p class="desc">
+          용액의 점도가 정해지면 spin coater의 회전 속도(rpm)에 따른
+          코팅 두께를 계산합니다.
+        </p>
+        <span class="card-cta">계산하러 가기 →</span>
+      </a>
+    </div>
   </main>
-
-  <script defer type="text/javascript" src="/main.js"></script>
 </body>
 </html>
