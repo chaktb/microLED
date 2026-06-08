@@ -1,0 +1,12 @@
+{
+  "name": "perovskite",
+  "private": true,
+  "description": "Perovskite thin-film process calculators (static site)",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4"
+  }
+}

@@ -1,0 +1,10 @@
+# Cloudflare Workers static-assets deployment.
+# Worker name "perovskite" + account subdomain "chaktb"
+#   => https://perovskite.chaktb.workers.dev
+name = "perovskite"
+compatibility_date = "2026-06-01"
+
+[assets]
+directory = "./public"
+# Serve index.html for "/" and return 404s as plain not-found.
+not_found_handling = "404-page"
