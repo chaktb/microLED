@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MicroLED — PL Peak Optimization</title>
+  <link href='/style.css' rel='stylesheet'>
+</head>
+<body>
+  <header>
+    <h1>PL Peak Optimization</h1>
+    <p class="subtitle">Wavelength-targeted 3-layer perovskite stack optimizer</p>
+    <nav class="nav">
+      <a href="/index.html">Home</a>
+      <a href="/synthesis.html">Solution Synthesis</a>
+      <a href="/spincoating.html">Spin Coating</a>
+      <a href="/deposition.html">Deposition Env</a>
+      <a href="/pl.html">PL</a>
+      <a href="/plopt.html" class="active">PL Optimize</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>Optimizer</h2>
+      <p class="desc">
+        3층 스택 <strong>MAPbI₃ (cap) / Emitter / MAPbI₃</strong>에서 목표 파장을
+        입력하면, (1) 발광 피크가 목표와 일치하도록 혼합 할라이드 emitter
+        조성 x를 정하고, (2) 자기흡수와 캡층 재흡수를 고려해 emitter 두께·농도를
+        최적화하여 전면(front) 검출 신호를 최대화합니다.
+        <br />
+        <span class="formula">
+          E<sub>g</sub>(x) = (1−x)E<sub>g,I</sub> + x·E<sub>g,Br</sub> − b·x(1−x);
+          &nbsp; I<sub>det</sub> = gen · escape · trans<sub>cap</sub> (Beer–Lambert)
+        </span>
+      </p>
+
+      <div class="controls">
+        <label>
+          목표 파장 (Target, nm)
+          <input id="target" type="number" value="540" step="5" min="450" max="900" />
+        </label>
+        <label>
+          보윙 파라미터 b (eV)
+          <input id="bowing" type="number" value="0.33" step="0.01" min="0" />
+        </label>
+        <label>
+          Stokes shift (eV)
+          <input id="stokes" type="number" value="0.05" step="0.01" min="0" />
+        </label>
+      </div>
+
+      <button id="calc" onclick="calculate()">최적화 (Optimize)</button>
+
+      <div id="summary" class="reaction"></div>
+
+      <div class="table-wrap">
+        <table class="result">
+          <thead>
+            <tr>
+              <th>설계 항목 (Design parameter)</th>
+              <th>값 (Value)</th>
+            </tr>
+          </thead>
+          <tbody id="design-body"></tbody>
+        </table>
+      </div>
+
+      <div id="charts">
+        <div class="chart-wrap">
+          <canvas id="chart-emission" class="chart" width="640" height="320"></canvas>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chart-thickness" class="chart" width="640" height="320"></canvas>
+        </div>
+      </div>
+
+      <h3 style="margin-top:1.5rem">타겟별 빠른 스캔 (Quick scan)</h3>
+      <div class="table-wrap">
+        <table id="scan-result" class="result" hidden>
+          <thead>
+            <tr>
+              <th>target (nm)</th>
+              <th>x (Br)</th>
+              <th>emit (nm)</th>
+              <th>cap (nm)</th>
+              <th>conc (M)</th>
+              <th>signal</th>
+            </tr>
+          </thead>
+          <tbody id="scan-body"></tbody>
+        </table>
+      </div>
+
+      <p class="note">
+        ※ Beer–Lambert 기반 정성 최적화입니다. 흡수계수(emitter 펌프 흡수
+        8×10⁴ cm⁻¹, 자기흡수 1.2×10⁴ cm⁻¹, 캡층 above-gap 흡수)는 대표값이며,
+        정확도를 위해서는 측정한 α(λ)로 교체해야 합니다. emitter 조성은 보윙
+        모델 E<sub>g</sub>(x)로 결정하고, 발광은 밴드갭 대비 Stokes만큼 적색
+        편이합니다. 달성 가능한 발광 범위(~551–800 nm)를 벗어난 목표는 가장
+        가까운 순수 조성으로 클램프되거나(±20 nm) 범위 밖으로 처리됩니다.
+        캡층이 목표를 흡수하면(목표 광자에너지 &gt; MAPbI₃ 갭) 캡을 최소 두께로,
+        투명하면 자유 두께로 둡니다. 광학 간섭은 무시합니다.
+      </p>
+
+      <div class="refs">
+        <h3>참고 자료 (References)</h3>
+        <ul>
+          <li><a href="https://en.wikipedia.org/wiki/Beer%E2%80%93Lambert_law" target="_blank" rel="noopener noreferrer">Wikipedia — Beer–Lambert law</a>: 흡수·투과(자기흡수, 캡층 재흡수) 모델</li>
+          <li><a href="https://en.wikipedia.org/wiki/Band_gap" target="_blank" rel="noopener noreferrer">Wikipedia — Band gap</a>: λ = hc/E<sub>g</sub>와 혼합 반도체 보윙</li>
+          <li><a href="https://en.wikipedia.org/wiki/Methylammonium_lead_halide" target="_blank" rel="noopener noreferrer">Wikipedia — Methylammonium lead halide</a>: MAPb(I,Br)₃ 밴드갭 튜닝</li>
+          <li><a href="https://en.wikipedia.org/wiki/Stokes_shift" target="_blank" rel="noopener noreferrer">Wikipedia — Stokes shift</a>: 발광의 적색 편이</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <script defer type="text/javascript" src="/plopt.js"></script>
+</body>
+</html>
