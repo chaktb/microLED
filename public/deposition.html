@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MicroLED — Deposition Environment</title>
+  <link href='/style.css' rel='stylesheet'>
+</head>
+<body>
+  <header>
+    <h1>Deposition Environment</h1>
+    <p class="subtitle">Glovebox N₂ purge &amp; partial-pressure calculator</p>
+    <nav class="nav">
+      <a href="/index.html">Home</a>
+      <a href="/synthesis.html">Solution Synthesis</a>
+      <a href="/spincoating.html">Spin Coating</a>
+      <a href="/deposition.html" class="active">Deposition Env</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>Calculator</h2>
+      <p class="desc">
+        글로브박스를 질소(N₂)로 퍼지할 때, 시간에 따른 박스 내부 N₂ 분압을
+        계산합니다. 박스 내부 가스가 완전히 혼합되고(perfect mixing) 부피·압력이
+        일정하다고 가정하면, 원래 대기(공기)의 잔류 분율은 지수적으로 감소합니다:
+        <br />
+        <span class="formula">
+          y<sub>N₂</sub>(t) = 1 − (1 − y₀)·e<sup>−t/τ</sup>,
+          &nbsp; τ = V / Q,
+          &nbsp; P<sub>N₂</sub> = y<sub>N₂</sub> · P<sub>total</sub>
+        </span>
+      </p>
+
+      <div class="controls">
+        <label>
+          글로브박스 부피 V (L)
+          <input id="volume" type="number" value="1000" step="10" min="0" />
+        </label>
+        <label>
+          N₂ 유량 Q (L/min)
+          <input id="flow" type="number" value="10" step="0.5" min="0" />
+        </label>
+        <label>
+          경과 시간 t (min)
+          <input id="time" type="number" value="60" step="5" min="0" />
+        </label>
+      </div>
+
+      <div class="controls">
+        <label>
+          전체 압력 P<sub>total</sub> (kPa)
+          <input id="ptotal" type="number" value="101.325" step="0.1" min="0" />
+        </label>
+        <label>
+          초기 N₂ 분율 y₀ (%)
+          <input id="y0" type="number" value="78.1" step="0.1" min="0" max="100" />
+        </label>
+      </div>
+
+      <button id="calc" onclick="calculate()">계산하기 (Calculate)</button>
+
+      <div id="summary" class="reaction"></div>
+
+      <div class="chart-wrap">
+        <canvas id="chart" class="chart" width="640" height="360"></canvas>
+      </div>
+
+      <table id="result" class="result" hidden>
+        <thead>
+          <tr>
+            <th>시간 t (min)</th>
+            <th>퍼지 부피 t/τ</th>
+            <th>N₂ 분율 (%)</th>
+            <th>N₂ 분압 (kPa)</th>
+            <th>잔류 불순물 (ppm)</th>
+          </tr>
+        </thead>
+        <tbody id="result-body"></tbody>
+      </table>
+
+      <p class="note">
+        ※ 완전혼합·정압·등온을 가정한 이상적 퍼지 모델입니다. 부피 유량은 동일
+        조건에서 몰 유량에 비례한다고 보았습니다. 실제 글로브박스는 데드볼륨,
+        벽면 흡착·탈기(outgassing), 미세 누설 때문에 잔류 O₂/H₂O 농도가 이 식보다
+        높게 유지될 수 있습니다. τ = V/Q는 한 번의 부피 교환에 걸리는 시간입니다.
+      </p>
+    </section>
+  </main>
+
+  <script defer type="text/javascript" src="/deposition.js"></script>
+</body>
+</html>
