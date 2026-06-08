@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MicroLED — Photoluminescence</title>
+  <link href='/style.css' rel='stylesheet'>
+</head>
+<body>
+  <header>
+    <h1>Photoluminescence (PL)</h1>
+    <p class="subtitle">Multilayer perovskite PL spectrum estimator</p>
+    <nav class="nav">
+      <a href="/index.html">Home</a>
+      <a href="/synthesis.html">Solution Synthesis</a>
+      <a href="/spincoating.html">Spin Coating</a>
+      <a href="/deposition.html">Deposition Env</a>
+      <a href="/pl.html" class="active">PL</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>Calculator</h2>
+      <p class="desc">
+        적층된 페로브스카이트 박막의 파장에 따른 PL intensity(a.u.)를 추정합니다.
+        각 층의 발광은 밴드갭에서 정해지는 피크 파장의 가우시안으로 모델링하고,
+        피크 세기는 발광체 양(두께 × 농도)에 비례한다고 가정합니다. 전체 스펙트럼은
+        각 층 기여의 합이며, 최댓값을 1 a.u.로 정규화합니다:
+        <br />
+        <span class="formula">
+          I(λ) = Σ<sub>i</sub> A<sub>i</sub> · exp[ −(λ − λ<sub>i</sub>)² / 2σ<sub>i</sub>² ],
+          &nbsp; A<sub>i</sub> ∝ d<sub>i</sub> · C<sub>i</sub>
+        </span>
+      </p>
+
+      <table class="result" style="margin-top:0">
+        <thead>
+          <tr>
+            <th>층 (Layer)</th>
+            <th>물질 (Material)</th>
+            <th>두께 d (nm)</th>
+            <th>농도 C (M)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1 (bottom)</td>
+            <td><select id="mat1"></select></td>
+            <td><input id="d1" type="number" value="500" step="10" min="0" /></td>
+            <td><input id="c1" type="number" value="0.9" step="0.05" min="0" /></td>
+          </tr>
+          <tr>
+            <td>2 (mid)</td>
+            <td><select id="mat2"></select></td>
+            <td><input id="d2" type="number" value="500" step="10" min="0" /></td>
+            <td><input id="c2" type="number" value="0.9" step="0.05" min="0" /></td>
+          </tr>
+          <tr>
+            <td>3 (top)</td>
+            <td><select id="mat3"></select></td>
+            <td><input id="d3" type="number" value="500" step="10" min="0" /></td>
+            <td><input id="c3" type="number" value="0.9" step="0.05" min="0" /></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <button id="calc" onclick="calculate()">계산하기 (Calculate)</button>
+
+      <div id="summary" class="reaction"></div>
+
+      <div class="chart-wrap">
+        <canvas id="chart" class="chart" width="640" height="360"></canvas>
+      </div>
+
+      <table id="result" class="result" hidden>
+        <thead>
+          <tr>
+            <th>물질 (Material)</th>
+            <th>피크 λ (nm)</th>
+            <th>FWHM (nm)</th>
+            <th>상대 세기 (a.u.)</th>
+          </tr>
+        </thead>
+        <tbody id="result-body"></tbody>
+      </table>
+
+      <p class="note">
+        ※ 정성적 추정 도구입니다. 각 물질의 피크 파장·반치폭(FWHM)은 대표적인
+        실온 값을 사용했으며, 조성·결정성·여기 조건에 따라 달라집니다. 본 모델은
+        층 간 재흡수(reabsorption)·에너지 전달·간섭(interference)·여기광 흡수
+        깊이를 무시합니다. 실제 적층에서는 밴드갭이 낮은 MAPbI₃ 층이 MAPbBr₃의
+        녹색 발광을 일부 재흡수하여 녹색 피크가 더 약하게 관측될 수 있습니다.
+      </p>
+    </section>
+  </main>
+
+  <script defer type="text/javascript" src="/pl.js"></script>
+</body>
+</html>
