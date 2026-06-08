@@ -66,29 +66,33 @@
 
       <div id="reaction" class="reaction"></div>
 
-      <table id="result" class="result" hidden>
-        <thead>
-          <tr>
-            <th>성분 (Component)</th>
-            <th>역할 (Role)</th>
-            <th>양 (Amount)</th>
-          </tr>
-        </thead>
-        <tbody id="result-body"></tbody>
-      </table>
+      <div class="table-wrap">
+        <table id="result" class="result" hidden>
+          <thead>
+            <tr>
+              <th>성분 (Component)</th>
+              <th>역할 (Role)</th>
+              <th>양 (Amount)</th>
+            </tr>
+          </thead>
+          <tbody id="result-body"></tbody>
+        </table>
+      </div>
 
-      <table id="visc-result" class="result" hidden>
-        <thead>
-          <tr>
-            <th>혼합물 (Mixture)</th>
-            <th>ΣM (g/mol)</th>
-            <th>용질 질량농도 (g/mL)</th>
-            <th>η @25°C (cP)</th>
-            <th>η @T (cP)</th>
-          </tr>
-        </thead>
-        <tbody id="visc-body"></tbody>
-      </table>
+      <div class="table-wrap">
+        <table id="visc-result" class="result" hidden>
+          <thead>
+            <tr>
+              <th>혼합물 (Mixture)</th>
+              <th>ΣM (g/mol)</th>
+              <th>용질 질량농도 (g/mL)</th>
+              <th>η @25°C (cP)</th>
+              <th>η @T (cP)</th>
+            </tr>
+          </thead>
+          <tbody id="visc-body"></tbody>
+        </table>
+      </div>
 
       <div class="chart-wrap">
         <canvas id="visc-chart" class="chart" width="640" height="360"></canvas>
@@ -107,6 +111,16 @@
         실제 점도는 동일 조건 측정값으로 k·E<sub>a</sub>를 보정해 사용하고, 얻은 점도는
         <a href="/spincoating.html">Spin Coating</a> 계산기에 입력할 수 있습니다.
       </p>
+
+      <div class="refs">
+        <h3>참고 자료 (References)</h3>
+        <ul>
+          <li><a href="https://en.wikipedia.org/wiki/Perovskite_solar_cell" target="_blank" rel="noopener noreferrer">Wikipedia — Perovskite solar cell</a>: 페로브스카이트 재료·소자 개요</li>
+          <li><a href="https://en.wikipedia.org/wiki/Dimethyl_sulfoxide" target="_blank" rel="noopener noreferrer">Wikipedia — Dimethyl sulfoxide (DMSO)</a>: 용매 물성(점도 ~1.99 cP @25°C)</li>
+          <li><a href="https://en.wikipedia.org/wiki/Temperature_dependence_of_viscosity" target="_blank" rel="noopener noreferrer">Wikipedia — Temperature dependence of viscosity</a>: Arrhenius/Andrade 점도 모델</li>
+          <li><a href="https://www.ossila.com/pages/perovskites" target="_blank" rel="noopener noreferrer">Ossila — Perovskites and Perovskite Solar Cells</a>: 전구체 용액 제조 가이드</li>
+        </ul>
+      </div>
     </section>
   </main>
 

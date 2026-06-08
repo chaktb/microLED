@@ -39,36 +39,38 @@
         각 곡선은 자체 최댓값으로 1 a.u. 정규화합니다.
       </p>
 
-      <table class="result" style="margin-top:0">
-        <thead>
-          <tr>
-            <th>층 (Layer)</th>
-            <th>물질 (Material)</th>
-            <th>두께 d (nm)</th>
-            <th>농도 C (M)</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>1 (bottom)</td>
-            <td><select id="mat1"></select></td>
-            <td><input id="d1" type="number" value="500" step="10" min="0" /></td>
-            <td><input id="c1" type="number" value="0.9" step="0.05" min="0" /></td>
-          </tr>
-          <tr>
-            <td>2 (mid)</td>
-            <td><select id="mat2"></select></td>
-            <td><input id="d2" type="number" value="500" step="10" min="0" /></td>
-            <td><input id="c2" type="number" value="0.9" step="0.05" min="0" /></td>
-          </tr>
-          <tr>
-            <td>3 (top)</td>
-            <td><select id="mat3"></select></td>
-            <td><input id="d3" type="number" value="500" step="10" min="0" /></td>
-            <td><input id="c3" type="number" value="0.9" step="0.05" min="0" /></td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="table-wrap" style="margin-top:0">
+        <table class="result">
+          <thead>
+            <tr>
+              <th>층 (Layer)</th>
+              <th>물질 (Material)</th>
+              <th>두께 d (nm)</th>
+              <th>농도 C (M)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1 (bottom)</td>
+              <td><select id="mat1"></select></td>
+              <td><input id="d1" type="number" value="500" step="10" min="0" /></td>
+              <td><input id="c1" type="number" value="0.9" step="0.05" min="0" /></td>
+            </tr>
+            <tr>
+              <td>2 (mid)</td>
+              <td><select id="mat2"></select></td>
+              <td><input id="d2" type="number" value="500" step="10" min="0" /></td>
+              <td><input id="c2" type="number" value="0.9" step="0.05" min="0" /></td>
+            </tr>
+            <tr>
+              <td>3 (top)</td>
+              <td><select id="mat3"></select></td>
+              <td><input id="d3" type="number" value="500" step="10" min="0" /></td>
+              <td><input id="c3" type="number" value="0.9" step="0.05" min="0" /></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
       <p class="desc" style="margin-bottom:0.4rem">
         혼합 할라이드 숄더 (Realistic, interdiffusion):
@@ -96,20 +98,22 @@
         <canvas id="chart" class="chart" width="640" height="360"></canvas>
       </div>
 
-      <table id="result" class="result" hidden>
-        <thead>
-          <tr>
-            <th>물질 (Material)</th>
-            <th>피크 λ (nm)</th>
-            <th>FWHM (nm)</th>
-            <th>PLQY</th>
-            <th>escape</th>
-            <th>Ideal (a.u.)</th>
-            <th>Real (a.u.)</th>
-          </tr>
-        </thead>
-        <tbody id="result-body"></tbody>
-      </table>
+      <div class="table-wrap">
+        <table id="result" class="result" hidden>
+          <thead>
+            <tr>
+              <th>물질 (Material)</th>
+              <th>피크 λ (nm)</th>
+              <th>FWHM (nm)</th>
+              <th>PLQY</th>
+              <th>escape</th>
+              <th>Ideal (a.u.)</th>
+              <th>Real (a.u.)</th>
+            </tr>
+          </thead>
+          <tbody id="result-body"></tbody>
+        </table>
+      </div>
 
       <p class="note">
         ※ 정성적 추정 도구입니다. 피크 파장은 밴드갭에서 λ = hc/E<sub>g</sub>로
@@ -120,6 +124,16 @@
         계면 상호확산에 의한 혼합 할라이드 숄더(기본 650 nm)를 반영합니다. 광학 간섭과
         여기광 흡수 깊이 분포는 여전히 무시합니다.
       </p>
+
+      <div class="refs">
+        <h3>참고 자료 (References)</h3>
+        <ul>
+          <li><a href="https://en.wikipedia.org/wiki/Photoluminescence" target="_blank" rel="noopener noreferrer">Wikipedia — Photoluminescence</a>: PL 발광의 기본 원리</li>
+          <li><a href="https://en.wikipedia.org/wiki/Perovskite_solar_cell" target="_blank" rel="noopener noreferrer">Wikipedia — Perovskite solar cell</a>: MAPbX₃ 밴드갭과 발광 파장</li>
+          <li><a href="https://en.wikipedia.org/wiki/Band_gap" target="_blank" rel="noopener noreferrer">Wikipedia — Band gap</a>: λ = hc/E<sub>g</sub> 관계</li>
+          <li><a href="https://en.wikipedia.org/wiki/Methylammonium_lead_halide" target="_blank" rel="noopener noreferrer">Wikipedia — Methylammonium lead halide</a>: MAPbX₃ 물성과 밴드갭(할라이드 조성 튜닝)</li>
+        </ul>
+      </div>
     </section>
   </main>
 

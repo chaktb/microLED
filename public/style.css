@@ -65,10 +65,14 @@ header h1 {
 }
 
 .formula {
-  display: inline-block;
+  display: block;
   margin-top: 0.5rem;
   font-family: ui-monospace, "SF Mono", Menlo, monospace;
   color: var(--accent);
+  max-width: 100%;
+  white-space: nowrap;
+  overflow-x: auto;            /* scroll long formulas instead of overflowing */
+  -webkit-overflow-scrolling: touch;
 }
 
 main {
@@ -192,6 +196,7 @@ button:hover {
   color: var(--accent);
   min-height: 1.2em;
   text-align: center;
+  overflow-wrap: anywhere;     /* wrap long output instead of overflowing */
 }
 
 .chart-wrap {
@@ -207,10 +212,22 @@ canvas.chart {
   border-radius: 10px;
 }
 
+/* Horizontal-scroll wrapper so wide tables never overflow the card. */
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 1rem;
+}
+
 .result {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 1rem;
+}
+
+/* When wrapped, the wrapper owns the top margin. */
+.table-wrap > .result {
+  margin-top: 0;
 }
 
 .result th,
@@ -218,6 +235,7 @@ canvas.chart {
   padding: 0.7rem 0.6rem;
   border-bottom: 1px solid var(--border);
   text-align: left;
+  white-space: nowrap;         /* keep columns intact; wrapper scrolls if needed */
 }
 
 .result th {
@@ -235,4 +253,39 @@ canvas.chart {
   margin-top: 1.25rem;
   font-size: 0.82rem;
   color: var(--muted);
+}
+
+/* Reference / further-reading links. */
+.refs {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+.refs h3 {
+  margin: 0 0 0.6rem;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.refs ul {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.refs li {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-bottom: 0.4rem;
+  overflow-wrap: anywhere;
+}
+
+.refs a {
+  color: var(--accent);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.refs a:hover {
+  text-decoration: underline;
 }

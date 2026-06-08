@@ -68,18 +68,20 @@
         <canvas id="chart" class="chart" width="640" height="360"></canvas>
       </div>
 
-      <table id="result" class="result" hidden>
-        <thead>
-          <tr>
-            <th>시간 t (min)</th>
-            <th>퍼지 부피 t/τ</th>
-            <th>N₂ 분율 (%)</th>
-            <th>N₂ 분압 (kPa)</th>
-            <th>잔류 불순물 (ppm)</th>
-          </tr>
-        </thead>
-        <tbody id="result-body"></tbody>
-      </table>
+      <div class="table-wrap">
+        <table id="result" class="result" hidden>
+          <thead>
+            <tr>
+              <th>시간 t (min)</th>
+              <th>퍼지 부피 t/τ</th>
+              <th>N₂ 분율 (%)</th>
+              <th>N₂ 분압 (kPa)</th>
+              <th>잔류 불순물 (ppm)</th>
+            </tr>
+          </thead>
+          <tbody id="result-body"></tbody>
+        </table>
+      </div>
 
       <p class="note">
         ※ 완전혼합·정압·등온을 가정한 이상적 퍼지 모델입니다. 부피 유량은 동일
@@ -87,6 +89,16 @@
         벽면 흡착·탈기(outgassing), 미세 누설 때문에 잔류 O₂/H₂O 농도가 이 식보다
         높게 유지될 수 있습니다. τ = V/Q는 한 번의 부피 교환에 걸리는 시간입니다.
       </p>
+
+      <div class="refs">
+        <h3>참고 자료 (References)</h3>
+        <ul>
+          <li><a href="https://en.wikipedia.org/wiki/Glovebox" target="_blank" rel="noopener noreferrer">Wikipedia — Glovebox</a>: 불활성 분위기 글로브박스 개요</li>
+          <li><a href="https://en.wikipedia.org/wiki/Continuous_stirred-tank_reactor" target="_blank" rel="noopener noreferrer">Wikipedia — Continuous stirred-tank reactor</a>: 완전혼합 희석/퍼지 모델(지수 감소)</li>
+          <li><a href="https://en.wikipedia.org/wiki/Partial_pressure" target="_blank" rel="noopener noreferrer">Wikipedia — Partial pressure</a>: 분압과 몰분율(Dalton 법칙)</li>
+          <li><a href="https://en.wikipedia.org/wiki/Purging_(gas)" target="_blank" rel="noopener noreferrer">Wikipedia — Purging (gas)</a>: 가스 퍼지와 부피 교환 개념</li>
+        </ul>
+      </div>
     </section>
   </main>
 
