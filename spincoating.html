@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MicroLED — Spin Coating</title>
+  <link href='/style.css' rel='stylesheet'>
+</head>
+<body>
+  <header>
+    <h1>Spin Coating</h1>
+    <p class="subtitle">Film thickness vs. spin speed calculator</p>
+    <nav class="nav">
+      <a href="/index.html">Solution Synthesis</a>
+      <a href="/spincoating.html" class="active">Spin Coating</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>Calculator</h2>
+      <p class="desc">
+        용액의 점도(viscosity)가 정해지면, spin coater의 회전 속도(rpm)에 따른
+        코팅 두께를 계산합니다. 박막 두께는 점도의 제곱근에 비례하고
+        회전 속도의 제곱근에 반비례한다는 경험식을 사용합니다:
+        <br />
+        <span class="formula">h = k · η<sup>α</sup> / ω<sup>β</sup></span>
+      </p>
+
+      <div class="controls">
+        <label>
+          점도 (Viscosity, cP)
+          <input id="viscosity" type="number" value="10" step="0.1" min="0" />
+        </label>
+        <label>
+          회전 속도 (Spin speed, rpm)
+          <input id="rpm" type="number" value="3000" step="100" min="1" />
+        </label>
+        <label>
+          보정 상수 k (Calibration)
+          <input id="kconst" type="number" value="5000" step="100" min="0" />
+        </label>
+      </div>
+
+      <div class="controls">
+        <label>
+          점도 지수 α (Viscosity exp.)
+          <input id="alpha" type="number" value="0.5" step="0.05" />
+        </label>
+        <label>
+          속도 지수 β (Speed exp.)
+          <input id="beta" type="number" value="0.5" step="0.05" />
+        </label>
+      </div>
+
+      <button id="calc" onclick="calculate()">계산하기 (Calculate)</button>
+
+      <div id="thickness" class="reaction"></div>
+
+      <table id="result" class="result" hidden>
+        <thead>
+          <tr>
+            <th>회전 속도 (rpm)</th>
+            <th>두께 (Thickness, nm)</th>
+            <th>두께 (µm)</th>
+          </tr>
+        </thead>
+        <tbody id="result-body"></tbody>
+      </table>
+
+      <p class="note">
+        ※ 보정 상수 k는 용액/용매 시스템과 증발 조건에 따라 달라지는 경험값입니다.
+        정확한 두께는 동일 조건에서 측정한 두께로 k를 보정해 사용하십시오.
+        기본 지수(α = β = 0.5)는 Newtonian fluid의 Emslie–Bonner–Peck 모델 근사에서 유래합니다.
+      </p>
+    </section>
+  </main>
+
+  <script defer type="text/javascript" src="/spincoating.js"></script>
+</body>
+</html>
