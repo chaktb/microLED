@@ -185,6 +185,19 @@ button:hover {
   text-align: center;
 }
 
+.chart-wrap {
+  margin-top: 1.25rem;
+}
+
+canvas.chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: #11152a;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
 .result {
   width: 100%;
   border-collapse: collapse;
